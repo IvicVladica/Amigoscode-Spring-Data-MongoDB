@@ -10,7 +10,6 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.List;
 
 @SpringBootApplication
@@ -32,7 +31,7 @@ public class MongoDbApplication {
             Student student = new Student(
                     "Sponge",
                     "Bob check mail",
-                    "bob2@gmail.com",
+                    "bob3@gmail.com",
                     Gender.FEMALE,
                     address,
                     List.of("Computer science", "Maths"),
@@ -40,24 +39,33 @@ public class MongoDbApplication {
                     LocalDateTime.now()
             );
 
-            Query query = new Query();
-            query.addCriteria(Criteria.where("email").is(student.getEmail()));
+            // usingMongoTemplateAndQuery(repository, mongoTemplate, student);
 
-            List<Student> students = mongoTemplate.find(query, Student.class);
-
-            if (students.size() > 1) {
-                throw new IllegalStateException("Found many students with email " + student.getEmail());
-            }
-
-            if (students.isEmpty()) {
-                System.out.println("Inserting student " + student);
-                repository.insert(student);
-            } else {
-                System.out.println(student + " already exists");
-            }
-
-
+            repository.findStudentByEmail(student.getEmail())
+                    .ifPresentOrElse(s -> System.out.println(student + " already exists"),
+                            () -> {
+                                System.out.println("Inserting student " + student);
+                                repository.insert(student);
+                            });
         };
+    }
+
+    private static void usingMongoTemplateAndQuery(StudentRepository repository, MongoTemplate mongoTemplate, Student student) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("email").is(student.getEmail()));
+
+        List<Student> students = mongoTemplate.find(query, Student.class);
+
+        if (students.size() > 1) {
+            throw new IllegalStateException("Found many students with email " + student.getEmail());
+        }
+
+        if (students.isEmpty()) {
+            System.out.println("Inserting student " + student);
+            repository.insert(student);
+        } else {
+            System.out.println(student + " already exists");
+        }
     }
 
 }
